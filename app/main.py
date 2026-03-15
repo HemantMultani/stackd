@@ -1,0 +1,25 @@
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from app.database import create_db_and_tables
+from app.seed import run_seed
+from app.routers import day, supplements, food, workout, sprint
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    run_seed()
+    yield
+
+app = FastAPI(title="Stackd", lifespan=lifespan)
+
+app.include_router(day.router)
+app.include_router(supplements.router)
+app.include_router(food.router)
+app.include_router(workout.router)
+app.include_router(sprint.router)
+
+
+@app.get("/")
+def root():
+    return {"status": "Stackd is running"}
