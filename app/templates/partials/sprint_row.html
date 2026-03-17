@@ -1,0 +1,31 @@
+<div class="activity-row" id="sprint-row-{{ sprint.id }}">
+  <div class="activity-icon icon-sprint">🏃</div>
+  <div class="activity-content">
+    <div class="activity-title">{{ sprint.duration_minutes }} min sprints</div>
+    <div class="activity-sub">Daily · morning</div>
+  </div>
+
+  {% if sprint.status.value != 'skipped' %}
+  <button
+    class="status-pill {% if sprint.status.value == 'done' %}done{% endif %}"
+    hx-patch="/sprint/{{ sprint.id }}/status?status={% if sprint.status.value == 'done' %}pending{% else %}done{% endif %}"
+    hx-target="#sprint-row-{{ sprint.id }}"
+    hx-swap="outerHTML">
+    {% if sprint.status.value == 'done' %}done{% else %}mark done{% endif %}
+  </button>
+  {% endif %}
+
+  {% if sprint.status.value == 'pending' %}
+  <button
+    class="skip-btn"
+    hx-patch="/sprint/{{ sprint.id }}/status?status=skipped"
+    hx-target="#sprint-row-{{ sprint.id }}"
+    hx-swap="outerHTML">
+    skip
+  </button>
+  {% endif %}
+
+  {% if sprint.status.value == 'skipped' %}
+  <span class="status-pill skipped">skipped</span>
+  {% endif %}
+</div>

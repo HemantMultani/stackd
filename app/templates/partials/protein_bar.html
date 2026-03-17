@@ -1,0 +1,13 @@
+<div class="protein-card" id="protein-card" hx-swap-oob="true">
+  <div class="protein-label">Protein today</div>
+  <div class="protein-numbers">
+    <span class="protein-current">{{ protein_eaten }}g</span>
+    <span class="protein-goal-text">/ {{ protein_goal }}g goal</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" style="width: {{ protein_pct }}%"></div>
+  </div>
+  {% if protein_eaten >= protein_goal %}
+  <div class="protein-met">Goal met</div>
+  {% endif %}
+</div>

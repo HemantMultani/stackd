@@ -9,7 +9,11 @@ from app.models import (
     Supplement, FoodItem, WorkoutType,
     ChecklistStatus, WorkoutStatus, SprintStatus
 )
+from fastapi import Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
+templates = Jinja2Templates(directory="app/templates")
 router = APIRouter(prefix="/day", tags=["day"])
 
 PROTEIN_GOAL = 100  # grams — hardcoded for v1
@@ -58,7 +62,6 @@ def get_or_create_today(session: Session) -> Day:
     session.commit()
     session.refresh(day)
     return day
-
 
 @router.get("/today")
 def get_today(session: Session = Depends(get_session)):
@@ -132,3 +135,64 @@ def get_today(session: Session = Depends(get_session)):
             "status": sprint.status if sprint else None,
         }
     }
+
+
+@router.get("/", response_class=HTMLResponse)
+def dashboard(request: Request, session: Session = Depends(get_session)):
+    day = get_or_create_today(session)
+
+    sup_logs = session.exec(
+        select(SupplementLog, Supplement)
+        .where(SupplementLog.day_id == day.id)
+        .where(SupplementLog.supplement_id == Supplement.id)
+    ).all()
+
+    food_logs = session.exec(
+        select(FoodLog, FoodItem)
+        .where(FoodLog.day_id == day.id)
+        .where(FoodLog.food_item_id == FoodItem.id)
+    ).all()
+
+    protein_eaten = sum(
+        item.protein_grams for log, item in food_logs if log.eaten
+    )
+
+    workout = session.exec(
+        select(WorkoutLog).where(WorkoutLog.day_id == day.id)
+    ).first()
+
+    sprint = session.exec(
+        select(SprintLog).where(SprintLog.day_id == day.id)
+    ).first()
+
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "day": day,
+        "sup_logs": [{"log": log, "sup": sup} for log, sup in sup_logs],
+        "food_logs": [{"log": log, "item": item} for log, item in food_logs],
+        "protein_eaten": int(protein_eaten),
+        "protein_goal": PROTEIN_GOAL,
+        "protein_pct": min(int((protein_eaten / PROTEIN_GOAL) * 100), 100),
+        "workout": workout,
+        "sprint": sprint,
+    })
+
+@router.get("/protein-bar", response_class=HTMLResponse)
+def protein_bar(request: Request, session: Session = Depends(get_session)):
+    day = get_or_create_today(session)
+
+    food_logs = session.exec(
+        select(FoodLog, FoodItem)
+        .where(FoodLog.day_id == day.id)
+        .where(FoodLog.food_item_id == FoodItem.id)
+    ).all()
+
+    protein_eaten = int(sum(item.protein_grams for log, item in food_logs if log.eaten))
+    protein_pct = min(int((protein_eaten / PROTEIN_GOAL) * 100), 100)
+
+    return templates.TemplateResponse("protein_bar.html", {
+        "request": request,
+        "protein_eaten": protein_eaten,
+        "protein_goal": PROTEIN_GOAL,
+        "protein_pct": protein_pct,
+    })

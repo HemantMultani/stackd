@@ -1,15 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 from app.database import get_session
-from app.models import SupplementLog, ChecklistStatus
+from app.models import SupplementLog, Supplement, ChecklistStatus
 
 router = APIRouter(prefix="/supplements", tags=["supplements"])
+templates = Jinja2Templates(directory="app/templates")
 
 
-@router.patch("/{log_id}/status")
+@router.patch("/{log_id}/status", response_class=HTMLResponse)
 def update_supplement_status(
     log_id: int,
     status: ChecklistStatus,
+    request: Request,
     session: Session = Depends(get_session)
 ):
     log = session.get(SupplementLog, log_id)
@@ -20,4 +24,10 @@ def update_supplement_status(
     session.add(log)
     session.commit()
     session.refresh(log)
-    return {"log_id": log.id, "status": log.status}
+
+    sup = session.get(Supplement, log.supplement_id)
+
+    return templates.TemplateResponse("partials/sup_row.html", {
+        "request": request,
+        "entry": {"log": log, "sup": sup}
+    })

@@ -1,0 +1,33 @@
+<div class="activity-row" id="workout-row-{{ workout.id }}">
+  <div class="activity-icon icon-workout">🏋️</div>
+  <div class="activity-content">
+    <div class="activity-title">
+      {{ workout.workout_type.value.replace('_', ' ').title() }}
+    </div>
+    <div class="activity-sub">Evening session</div>
+  </div>
+
+  {% if workout.status.value != 'skipped' %}
+  <button
+    class="status-pill {% if workout.status.value == 'done' %}done{% endif %}"
+    hx-patch="/workout/{{ workout.id }}/status?status={% if workout.status.value == 'done' %}pending{% else %}done{% endif %}"
+    hx-target="#workout-row-{{ workout.id }}"
+    hx-swap="outerHTML">
+    {% if workout.status.value == 'done' %}done{% else %}mark done{% endif %}
+  </button>
+  {% endif %}
+
+  {% if workout.status.value == 'pending' %}
+  <button
+    class="skip-btn"
+    hx-patch="/workout/{{ workout.id }}/status?status=skipped"
+    hx-target="#workout-row-{{ workout.id }}"
+    hx-swap="outerHTML">
+    skip
+  </button>
+  {% endif %}
+
+  {% if workout.status.value == 'skipped' %}
+  <span class="status-pill skipped">skipped</span>
+  {% endif %}
+</div>

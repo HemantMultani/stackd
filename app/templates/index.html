@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stackd</title>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 1rem 1rem 4rem;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 1.25rem 0 0.25rem;
+    }
+    .header h1 { font-size: 22px; font-weight: 600; }
+    .header .date { font-size: 13px; color: #888; }
+
+    /* Protein card */
+    .protein-card {
+      background: white;
+      border: 0.5px solid rgba(0,0,0,0.1);
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+    }
+    .protein-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+    .protein-numbers {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+    .protein-current { font-size: 28px; font-weight: 600; }
+    .protein-goal-text { font-size: 14px; color: #888; }
+    .progress-track {
+      height: 6px;
+      background: #f0f0ec;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #1D9E75;
+      border-radius: 99px;
+      transition: width 0.4s ease;
+    }
+    .protein-met {
+      font-size: 12px;
+      color: #0F6E56;
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    /* Section */
+    .section { margin-bottom: 1.25rem; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+      padding-left: 2px;
+    }
+
+    /* Card */
+    .card {
+      background: white;
+      border: 0.5px solid rgba(0,0,0,0.1);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    /* Generic row */
+    .row {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      gap: 12px;
+      border-bottom: 0.5px solid rgba(0,0,0,0.06);
+    }
+    .row:last-child { border-bottom: none; }
+
+    /* Supplement check circle */
+    .check-circle {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1.5px solid #ccc;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      background: white;
+    }
+    .check-circle:hover { border-color: #1D9E75; }
+    .check-circle.done {
+      background: #1D9E75;
+      border-color: #1D9E75;
+    }
+    .check-circle.done::after {
+      content: '';
+      display: block;
+      width: 5px;
+      height: 9px;
+      border: 2px solid white;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg) translate(-1px, -1px);
+    }
+    .check-circle.skipped {
+      background: #f5f5f0;
+      border-color: #ddd;
+    }
+    .check-circle.skipped::after {
+      content: '–';
+      font-size: 14px;
+      color: #aaa;
+      line-height: 1;
+    }
+
+    .row-content { flex: 1; min-width: 0; }
+    .row-title {
+      font-size: 15px;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .row-title.done {
+      color: #bbb;
+      text-decoration: line-through;
+    }
+    .row-sub { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+    /* Time badges */
+    .badge {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 99px;
+      flex-shrink: 0;
+    }
+    .badge-morning  { background: #FAEEDA; color: #854F0B; }
+    .badge-afternoon{ background: #FAECE7; color: #993C1D; }
+    .badge-night    { background: #EEEDFE; color: #3C3489; }
+
+    /* Skip button */
+    .skip-btn {
+      font-size: 12px;
+      color: #bbb;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px;
+      flex-shrink: 0;
+    }
+    .skip-btn:hover { color: #888; }
+
+    /* Activity rows */
+    .activity-row {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      gap: 14px;
+      border-bottom: 0.5px solid rgba(0,0,0,0.06);
+    }
+    .activity-row:last-child { border-bottom: none; }
+    .activity-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+    .icon-sprint  { background: #E6F1FB; }
+    .icon-workout { background: #E1F5EE; }
+    .icon-rest    { background: #f5f5f0; }
+    .activity-content { flex: 1; }
+    .activity-title { font-size: 15px; color: #1a1a1a; }
+    .activity-sub { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+    /* Status pill */
+    .status-pill {
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 99px;
+      border: 0.5px solid rgba(0,0,0,0.12);
+      color: #888;
+      cursor: pointer;
+      background: white;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .status-pill:hover { background: #f5f5f0; }
+    .status-pill.done {
+      background: #E1F5EE;
+      color: #0F6E56;
+      border-color: #5DCAA5;
+    }
+    .status-pill.skipped {
+      background: #f5f5f0;
+      color: #aaa;
+      border-color: #ddd;
+    }
+
+    /* Food rows */
+    .food-row {
+      display: flex;
+      align-items: center;
+      padding: 11px 16px;
+      gap: 12px;
+      border-bottom: 0.5px solid rgba(0,0,0,0.06);
+    }
+    .food-row:last-child { border-bottom: none; }
+    .food-check {
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      border: 1.5px solid #ccc;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      background: white;
+    }
+    .food-check:hover { border-color: #1D9E75; }
+    .food-check.eaten {
+      background: #1D9E75;
+      border-color: #1D9E75;
+    }
+    .food-check.eaten::after {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 8px;
+      border: 2px solid white;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg) translate(-1px, -1px);
+    }
+    .protein-tag {
+      font-size: 11px;
+      color: #0F6E56;
+      background: #E1F5EE;
+      padding: 2px 8px;
+      border-radius: 99px;
+      flex-shrink: 0;
+      font-weight: 500;
+    }
+
+    /* HTMX loading indicator */
+    .htmx-indicator { opacity: 0; transition: opacity 0.2s; }
+    .htmx-request .htmx-indicator { opacity: 1; }
+
+    /* Swap fade */
+    .htmx-swapping { opacity: 0; transition: opacity 0.1s ease-out; }
+    .htmx-settling  { opacity: 1; transition: opacity 0.2s ease-in; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Stackd</h1>
+    <span class="date">
+      {{ day.log_date.strftime('%a, %d %b') }}
+    </span>
+  </div>
+
+  <!-- Protein summary -->
+  <div class="protein-card" id="protein-card">
+    <div class="protein-label">Protein today</div>
+    <div class="protein-numbers">
+      <span class="protein-current">{{ protein_eaten }}g</span>
+      <span class="protein-goal-text">/ {{ protein_goal }}g goal</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" style="width: {{ protein_pct }}%"></div>
+    </div>
+    {% if protein_eaten >= protein_goal %}
+    <div class="protein-met">Goal met</div>
+    {% endif %}
+  </div>
+
+  <!-- Activity -->
+  <div class="section">
+    <div class="section-label">Activity</div>
+    <div class="card">
+
+      <!-- Sprint -->
+      {% if sprint %}
+      <div class="activity-row" id="sprint-row-{{ sprint.id }}">
+        <div class="activity-icon icon-sprint">🏃</div>
+        <div class="activity-content">
+          <div class="activity-title">{{ sprint.duration_minutes }} min sprints</div>
+          <div class="activity-sub">Daily · morning</div>
+        </div>
+        {% if sprint.status.value != 'skipped' %}
+        <button
+          class="status-pill {% if sprint.status.value == 'done' %}done{% endif %}"
+          hx-patch="/sprint/{{ sprint.id }}/status?status={% if sprint.status.value == 'done' %}pending{% else %}done{% endif %}"
+          hx-target="#sprint-row-{{ sprint.id }}"
+          hx-swap="outerHTML"
+          hx-indicator="#sprint-row-{{ sprint.id }}">
+          {% if sprint.status.value == 'done' %}done{% else %}mark done{% endif %}
+        </button>
+        {% endif %}
+        {% if sprint.status.value == 'pending' %}
+        <button
+          class="skip-btn"
+          hx-patch="/sprint/{{ sprint.id }}/status?status=skipped"
+          hx-target="#sprint-row-{{ sprint.id }}"
+          hx-swap="outerHTML"
+          hx-indicator="#sprint-row-{{ sprint.id }}">
+          skip
+        </button>
+        {% endif %}
+        {% if sprint.status.value == 'skipped' %}
+        <span class="status-pill skipped">skipped</span>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Workout -->
+      {% if workout %}
+      <div class="activity-row" id="workout-row-{{ workout.id }}">
+        <div class="activity-icon icon-workout">🏋️</div>
+        <div class="activity-content">
+          <div class="activity-title">
+            {{ workout.workout_type.value.replace('_', ' ').title() }}
+          </div>
+          <div class="activity-sub">Evening session</div>
+        </div>
+        {% if workout.status.value != 'skipped' %}
+        <button
+          class="status-pill {% if workout.status.value == 'done' %}done{% endif %}"
+          hx-patch="/workout/{{ workout.id }}/status?status={% if workout.status.value == 'done' %}pending{% else %}done{% endif %}"
+          hx-target="#workout-row-{{ workout.id }}"
+          hx-swap="outerHTML"
+          hx-indicator="#workout-row-{{ workout.id }}">
+          {% if workout.status.value == 'done' %}done{% else %}mark done{% endif %}
+        </button>
+        {% endif %}
+        {% if workout.status.value == 'pending' %}
+        <button
+          class="skip-btn"
+          hx-patch="/workout/{{ workout.id }}/status?status=skipped"
+          hx-target="#workout-row-{{ workout.id }}"
+          hx-swap="outerHTML"
+          hx-indicator="#workout-row-{{ workout.id }}">
+          skip
+        </button>
+        {% endif %}
+        {% if workout.status.value == 'skipped' %}
+        <span class="status-pill skipped">skipped</span>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="activity-row">
+        <div class="activity-icon icon-rest">🛌</div>
+        <div class="activity-content">
+          <div class="activity-title">Rest day</div>
+          <div class="activity-sub">No workout scheduled today</div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- Supplements -->
+  <div class="section">
+    <div class="section-label">Supplements</div>
+    <div class="card">
+      {% for entry in sup_logs %}
+      <div class="row" id="sup-row-{{ entry.log.id }}">
+
+        <!-- Clicking circle toggles done/pending -->
+        <div
+          class="check-circle {% if entry.log.status.value == 'done' %}done{% elif entry.log.status.value == 'skipped' %}skipped{% endif %}"
+          hx-patch="/supplements/{{ entry.log.id }}/status?status={% if entry.log.status.value == 'done' %}pending{% else %}done{% endif %}"
+          hx-target="#sup-row-{{ entry.log.id }}"
+          hx-swap="outerHTML">
+        </div>
+
+        <div class="row-content">
+          <div class="row-title {% if entry.log.status.value == 'done' %}done{% endif %}">
+            {{ entry.sup.name }}
+          </div>
+          {% if entry.sup.notes %}
+          <div class="row-sub">{{ entry.sup.notes }}</div>
+          {% endif %}
+        </div>
+
+        <span class="badge badge-{{ entry.sup.scheduled_time.value }}">
+          {{ entry.sup.scheduled_time.value }}
+        </span>
+
+        {% if entry.log.status.value == 'pending' %}
+        <button
+          class="skip-btn"
+          hx-patch="/supplements/{{ entry.log.id }}/status?status=skipped"
+          hx-target="#sup-row-{{ entry.log.id }}"
+          hx-swap="outerHTML">
+          skip
+        </button>
+        {% endif %}
+
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Food -->
+  <div class="section">
+    <div class="section-label">Food · protein</div>
+    <div class="card">
+      {% for entry in food_logs %}
+      <div class="food-row" id="food-row-{{ entry.log.id }}">
+
+        <div
+          class="food-check {% if entry.log.eaten %}eaten{% endif %}"
+          hx-patch="/food/{{ entry.log.id }}/eaten?eaten={% if entry.log.eaten %}false{% else %}true{% endif %}"
+          hx-target="#food-row-{{ entry.log.id }}"
+          hx-swap="outerHTML"
+          hx-on::after-request="htmx.ajax('GET', '/day/protein-bar', {target:'#protein-card', swap:'outerHTML'})">
+        </div>
+
+        <div class="row-content">
+          <div class="row-title" style="font-size:14px; {% if entry.log.eaten %}color:#bbb; text-decoration:line-through;{% endif %}">
+            {{ entry.item.name }}
+          </div>
+          <div class="row-sub">{{ entry.item.meal_time.value }}</div>
+        </div>
+
+        <span class="protein-tag">{{ entry.item.protein_grams | int }}g</span>
+
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

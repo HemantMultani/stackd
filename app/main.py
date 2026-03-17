@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from app.database import create_db_and_tables
 from app.seed import run_seed
 from app.routers import day, supplements, food, workout, sprint
+from fastapi.responses import RedirectResponse
 
 
 @asynccontextmanager
@@ -22,4 +23,4 @@ app.include_router(sprint.router)
 
 @app.get("/")
 def root():
-    return {"status": "Stackd is running"}
+    return RedirectResponse(url="/day/")

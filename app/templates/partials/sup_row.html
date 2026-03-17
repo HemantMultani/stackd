@@ -1,0 +1,33 @@
+<div class="row" id="sup-row-{{ entry.log.id }}">
+
+  <div
+    class="check-circle {% if entry.log.status.value == 'done' %}done{% elif entry.log.status.value == 'skipped' %}skipped{% endif %}"
+    hx-patch="/supplements/{{ entry.log.id }}/status?status={% if entry.log.status.value == 'done' %}pending{% else %}done{% endif %}"
+    hx-target="#sup-row-{{ entry.log.id }}"
+    hx-swap="outerHTML">
+  </div>
+
+  <div class="row-content">
+    <div class="row-title {% if entry.log.status.value == 'done' %}done{% endif %}">
+      {{ entry.sup.name }}
+    </div>
+    {% if entry.sup.notes %}
+    <div class="row-sub">{{ entry.sup.notes }}</div>
+    {% endif %}
+  </div>
+
+  <span class="badge badge-{{ entry.sup.scheduled_time.value }}">
+    {{ entry.sup.scheduled_time.value }}
+  </span>
+
+  {% if entry.log.status.value == 'pending' %}
+  <button
+    class="skip-btn"
+    hx-patch="/supplements/{{ entry.log.id }}/status?status=skipped"
+    hx-target="#sup-row-{{ entry.log.id }}"
+    hx-swap="outerHTML">
+    skip
+  </button>
+  {% endif %}
+
+</div>
