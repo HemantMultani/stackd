@@ -472,5 +472,43 @@
   </div>
 
 </div>
+<div id="toast" style="
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #1a1a1a;
+  color: white;
+  font-size: 13px;
+  padding: 10px 18px;
+  border-radius: 99px;
+  opacity: 0;
+  transition: all 0.25s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 999;
+" id="toast">Saved</div>
+
+<script>
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    setTimeout(() => {
+      t.style.opacity = '0';
+      t.style.transform = 'translateX(-50%) translateY(80px)';
+    }, 1800);
+  }
+
+  // Fire toast after any HTMX swap
+  document.body.addEventListener('htmx:afterSwap', function(e) {
+    const id = e.detail.target.id;
+    if (id && id.startsWith('sup-row')) showToast('Supplement updated');
+    else if (id && id.startsWith('food-row')) showToast('Food logged');
+    else if (id && id.startsWith('workout-row')) showToast('Workout updated');
+    else if (id && id.startsWith('sprint-row')) showToast('Sprint updated');
+  });
+</script>
 </body>
 </html>
