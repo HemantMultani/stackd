@@ -165,6 +165,8 @@ def dashboard(request: Request, session: Session = Depends(get_session)):
         select(SprintLog).where(SprintLog.day_id == day.id)
     ).first()
 
+    weekly = compute_weekly_stats(session)
+
     return templates.TemplateResponse("index.html", {
         "request": request,
         "day": day,
@@ -175,6 +177,7 @@ def dashboard(request: Request, session: Session = Depends(get_session)):
         "protein_pct": min(int((protein_eaten / PROTEIN_GOAL) * 100), 100),
         "workout": workout,
         "sprint": sprint,
+        "weekly": weekly,
     })
 
 @router.get("/protein-bar", response_class=HTMLResponse)
@@ -267,6 +270,8 @@ def weekly_summary(request: Request, session: Session = Depends(get_session)):
             (d["sup_done"] / d["sup_total"] * 100) if d["sup_total"] else 0
             for d in past_days
         ) / len(past_days))
+    
+    weekly = compute_weekly_stats(session)
 
     return templates.TemplateResponse("week.html", {
         "request": request,
@@ -281,4 +286,79 @@ def weekly_summary(request: Request, session: Session = Depends(get_session)):
         "workout_scheduled_count": workout_scheduled_count,
         "sup_completion": sup_completion,
         "protein_goal": PROTEIN_GOAL,
+        "weekly": weekly,
+        "timedelta": timedelta,
     })
+
+
+def compute_weekly_stats(session: Session) -> dict:
+    today = date_type.today()
+    monday = today - timedelta(days=today.weekday())
+    week_dates = [monday + timedelta(days=i) for i in range(7)]
+    past_dates = [d for d in week_dates if d <= today]
+
+    sprint_done = 0
+    workout_done = 0
+    workout_scheduled = 0
+    protein_met = 0
+    sup_pcts = []
+
+    for d in past_dates:
+        day = session.exec(select(Day).where(Day.log_date == d)).first()
+        if not day:
+            continue
+
+        sprint = session.exec(
+            select(SprintLog).where(SprintLog.day_id == day.id)
+        ).first()
+        if sprint and sprint.status == SprintStatus.done:
+            sprint_done += 1
+
+        workout = session.exec(
+            select(WorkoutLog).where(WorkoutLog.day_id == day.id)
+        ).first()
+        if workout:
+            workout_scheduled += 1
+            if workout.status == WorkoutStatus.done:
+                workout_done += 1
+
+        food_logs = session.exec(
+            select(FoodLog, FoodItem)
+            .where(FoodLog.day_id == day.id)
+            .where(FoodLog.food_item_id == FoodItem.id)
+        ).all()
+        protein = sum(i.protein_grams for l, i in food_logs if l.eaten)
+        if protein >= PROTEIN_GOAL:
+            protein_met += 1
+
+        sup_logs = session.exec(
+            select(SupplementLog).where(SupplementLog.day_id == day.id)
+        ).all()
+        if sup_logs:
+            pct = int(sum(1 for s in sup_logs
+                         if s.status == ChecklistStatus.done) / len(sup_logs) * 100)
+            sup_pcts.append(pct)
+
+    days_elapsed = len(past_dates)
+    sup_avg = int(sum(sup_pcts) / len(sup_pcts)) if sup_pcts else 0
+
+    # Workout target is number of Mon-Thu in the week up to today
+    workout_target = sum(
+        1 for d in past_dates if d.weekday() in (0, 1, 2, 3)
+    )
+
+    return {
+        "sprint_done": sprint_done,
+        "sprint_target": min(days_elapsed, 5),
+        "sprint_pct": min(int(sprint_done / 5 * 100), 100),
+        "workout_done": workout_done,
+        "workout_target": workout_target,
+        "workout_pct": min(int(workout_done / max(workout_target, 1) * 100), 100),
+        "protein_met": protein_met,
+        "protein_target": days_elapsed,
+        "protein_pct": min(int(protein_met / max(days_elapsed, 1) * 100), 100),
+        "sup_avg": sup_avg,
+        "sup_pct": sup_avg,
+        "days_elapsed": days_elapsed,
+        "monday": monday,
+    }

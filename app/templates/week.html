@@ -148,7 +148,7 @@
   </div>
 
   <!-- Summary stats -->
-  <div class="stats-grid">
+  <!-- <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-label">Protein goal</div>
       <div class="stat-value {% if protein_met_count >= 5 %}green{% endif %}">
@@ -177,8 +177,42 @@
       </div>
       <div class="stat-sub">avg daily completion</div>
     </div>
-  </div>
+  </div> -->
 
+  <!-- Full weekly progress bars -->
+<div style="background:white;border:0.5px solid rgba(0,0,0,0.1);border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.25rem;">
+
+  {% set bars = [
+    ("Sprints",      weekly.sprint_pct,  weekly.sprint_done,  weekly.sprint_target,  "sessions",  "#185FA5", "Target 5/week"),
+    ("Workouts",     weekly.workout_pct, weekly.workout_done, weekly.workout_target, "sessions",  "#0F6E56", "Mon–Thu schedule"),
+    ("Protein goal", weekly.protein_pct, weekly.protein_met,  weekly.protein_target, "days hit",  "#854F0B", "100g daily target"),
+    ("Supplements",  weekly.sup_pct,     weekly.sup_avg,      100,                   "% avg",     "#3C3489", "Daily stack"),
+  ] %}
+
+  {% for label, pct, done, target, unit, color, subtitle in bars %}
+  <div style="margin-bottom:{% if not loop.last %}1.25rem{% endif %};">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;">
+      <span style="font-size:14px;font-weight:500;color:#1a1a1a;">{{ label }}</span>
+      <span style="font-size:13px;color:#1a1a1a;font-weight:500;">
+        {% if unit == "% avg" %}{{ done }}%
+        {% else %}{{ done }}/{{ target }} {{ unit }}{% endif %}
+      </span>
+    </div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:8px;">{{ subtitle }}</div>
+    <div style="height:8px;background:#f0f0ec;border-radius:99px;overflow:hidden;">
+      <div style="height:100%;width:{{ pct }}%;background:{{ color }};border-radius:99px;transition:width 0.5s ease;"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:4px;">
+      <span style="font-size:11px;color:{% if pct == 100 %}#0F6E56{% else %}#bbb{% endif %};">
+        {{ pct }}%{% if pct == 100 %} ✓{% endif %}
+      </span>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+
+<!-- Keep the existing day strip and day breakdown below -->
   <!-- Day strip -->
   <div class="section-label">Daily overview</div>
   <div class="day-strip">
