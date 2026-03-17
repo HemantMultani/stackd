@@ -291,12 +291,14 @@
 
   <!-- Header -->
   <div class="header">
-  <h1>Stackd</h1>
-  <div style="display:flex;gap:12px;align-items:baseline;">
-    <a href="/day/week" style="font-size:13px;color:#888;text-decoration:none;">week →</a>
-    <span class="date">{{ day.log_date.strftime('%a, %d %b') }}</span>
+    <h1>Stackd</h1>
+    <div style="display:flex;gap:16px;align-items:baseline;">
+      <a href="/projects/" style="font-size:13px;color:#888;text-decoration:none;">projects</a>
+      <a href="/oath/" style="font-size:13px;color:#888;text-decoration:none;">oath</a>
+      <a href="/day/week" style="font-size:13px;color:#888;text-decoration:none;">week</a>
+      <span class="date">{{ day.log_date.strftime('%a, %d %b') }}</span>
+    </div>
   </div>
-</div>
 
   <!-- Protein summary -->
   <div class="protein-card" id="protein-card">

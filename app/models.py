@@ -72,6 +72,7 @@ class Day(SQLModel, table=True):
     workout_logs: List["WorkoutLog"] = Relationship(back_populates="day")
     sprint_logs: List["SprintLog"] = Relationship(back_populates="day")
     checklist_items: List["ChecklistItem"] = Relationship(back_populates="day")
+    project_logs: List["ProjectDailyLog"] = Relationship(back_populates="day")
 
 
 # ─── Supplement Log (daily intake tracking) ──────────────────────────────────
@@ -132,3 +133,82 @@ class ChecklistItem(SQLModel, table=True):
     category: Optional[str] = None  # "work" / "personal" / etc.
 
     day: Optional[Day] = Relationship(back_populates="checklist_items")
+
+# ─── Oath ────────────────────────────────────────────────────────────────────
+
+class OathStatus(str, Enum):
+    active = "active"
+    completed = "completed"
+    abandoned = "abandoned"
+
+class Oath(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str                          # "6 Month Apex Oath"
+    intention: str                      # why you're doing this
+    start_date: date_type
+    end_date: date_type                 # start + 180 days
+    status: OathStatus = OathStatus.active
+
+    milestones: List["OathMilestone"] = Relationship(back_populates="oath")
+
+
+class OathMilestone(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    oath_id: int = Field(foreign_key="oath.id")
+    title: str                          # "Ship 3 products"
+    target_date: Optional[date_type] = None
+    completed: bool = False
+    completed_date: Optional[date_type] = None
+
+    oath: Optional[Oath] = Relationship(back_populates="milestones")
+
+
+# ─── Projects ────────────────────────────────────────────────────────────────
+
+class ProjectStatus(str, Enum):
+    active = "active"
+    shipped = "shipped"
+    paused = "paused"
+    dropped = "dropped"
+
+class Project(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    description: Optional[str] = None
+    status: ProjectStatus = ProjectStatus.active
+    started_date: date_type
+    shipped_date: Optional[date_type] = None
+    goal: Optional[str] = None          # "Ship v1 by April"
+
+    tasks: List["ProjectTask"] = Relationship(back_populates="project")
+    daily_logs: List["ProjectDailyLog"] = Relationship(back_populates="project")
+
+
+class TaskStatus(str, Enum):
+    todo = "todo"
+    in_progress = "in_progress"
+    done = "done"
+    dropped = "dropped"
+
+class ProjectTask(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    project_id: int = Field(foreign_key="project.id")
+    title: str
+    status: TaskStatus = TaskStatus.todo
+    created_date: date_type
+    completed_date: Optional[date_type] = None
+    priority: int = Field(default=2)    # 1=high 2=medium 3=low
+
+    project: Optional[Project] = Relationship(back_populates="tasks")
+
+
+class ProjectDailyLog(SQLModel, table=True):
+    """Did you work on this project today? What did you do?"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    project_id: int = Field(foreign_key="project.id")
+    day_id: int = Field(foreign_key="day.id")
+    worked: bool = False
+    note: Optional[str] = None         # "Built auth flow, fixed HTMX bug"
+
+    project: Optional[Project] = Relationship(back_populates="daily_logs")
+    day: Optional[Day] = Relationship(back_populates="project_logs")

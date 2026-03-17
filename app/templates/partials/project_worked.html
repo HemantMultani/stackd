@@ -1,0 +1,10 @@
+<div class="worked-row" id="worked-{{ project.id }}">
+  <span class="worked-label">Worked today?</span>
+  <button
+    class="worked-toggle {% if daily_log.worked %}yes{% endif %}"
+    hx-patch="/projects/{{ project.id }}/log/worked"
+    hx-target="#worked-{{ project.id }}"
+    hx-swap="outerHTML">
+    {% if daily_log.worked %}yes{% else %}mark yes{% endif %}
+  </button>
+</div>

@@ -1,5 +1,7 @@
 __pycache__/
 *.pyc
 .env
-stackd.db
-venv
+.env.prod
+*.db
+logs/
+venv/

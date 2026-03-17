@@ -1,0 +1,19 @@
+<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid rgba(0,0,0,0.05);" id="task-{{ task.id }}">
+  <div
+    style="width:18px;height:18px;border-radius:4px;border:1.5px solid {% if task.status.value == 'done' %}#1D9E75{% elif task.status.value == 'in_progress' %}#FAC775{% else %}#ccc{% endif %};background:{% if task.status.value == 'done' %}#1D9E75{% elif task.status.value == 'in_progress' %}#FAEEDA{% else %}white{% endif %};flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;"
+    hx-patch="/projects/tasks/{{ task.id }}/status"
+    hx-target="#task-{{ task.id }}"
+    hx-swap="outerHTML">
+    {% if task.status.value == 'done' %}
+    <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+    {% elif task.status.value == 'in_progress' %}
+    <div style="width:6px;height:6px;border-radius:50%;background:#854F0B;"></div>
+    {% endif %}
+  </div>
+  <span style="font-size:14px;flex:1;{% if task.status.value == 'done' %}color:#bbb;text-decoration:line-through;{% elif task.status.value == 'in_progress' %}color:#854F0B;{% endif %}">
+    {{ task.title }}
+  </span>
+  <span style="font-size:11px;color:#bbb;">
+    {% if task.status.value == 'todo' %}todo{% elif task.status.value == 'in_progress' %}in progress{% else %}done{% endif %}
+  </span>
+</div>

@@ -1,8 +1,8 @@
+import os
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from datetime import date as date_type, timedelta
 from typing import Optional
-
 from app.database import get_session
 from app.models import (
     Day, SupplementLog, FoodLog, WorkoutLog, SprintLog,
@@ -16,7 +16,7 @@ from fastapi.templating import Jinja2Templates
 templates = Jinja2Templates(directory="app/templates")
 router = APIRouter(prefix="/day", tags=["day"])
 
-PROTEIN_GOAL = 100  # grams — hardcoded for v1
+PROTEIN_GOAL = int(os.getenv("PROTEIN_GOAL", "100"))
 
 
 def get_or_create_today(session: Session) -> Day:

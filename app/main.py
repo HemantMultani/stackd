@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from app.database import create_db_and_tables
 from app.seed import run_seed
 from app.routers import day, supplements, food, workout, sprint
+from app.routers import day, supplements, food, workout, sprint, oath, projects
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -21,7 +22,8 @@ app.include_router(supplements.router)
 app.include_router(food.router)
 app.include_router(workout.router)
 app.include_router(sprint.router)
-
+app.include_router(oath.router)
+app.include_router(projects.router)
 
 @app.get("/")
 def root():

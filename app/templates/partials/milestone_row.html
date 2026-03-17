@@ -1,0 +1,19 @@
+<div class="row" id="milestone-{{ m.id }}">
+  <div
+    class="milestone-check {% if m.completed %}done{% endif %}"
+    hx-patch="/oath/milestones/{{ m.id }}/complete"
+    hx-target="#milestone-{{ m.id }}"
+    hx-swap="outerHTML">
+  </div>
+  <div class="milestone-content">
+    <div class="milestone-title {% if m.completed %}done{% endif %}">{{ m.title }}</div>
+    {% if m.target_date %}
+    <div class="milestone-date">
+      target {{ m.target_date.strftime('%d %b %Y') }}
+      {% if m.completed and m.completed_date %}
+        · completed {{ m.completed_date.strftime('%d %b') }}
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>

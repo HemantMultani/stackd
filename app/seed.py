@@ -1,6 +1,8 @@
 from sqlmodel import Session, select
 from app.database import engine
 from app.models import Supplement, FoodItem, SupplementTime, MealTime
+from datetime import date as date_type, timedelta
+from app.models import Oath, OathMilestone, OathStatus, Project, ProjectStatus
 
 
 def seed_supplements(session: Session):
@@ -43,8 +45,59 @@ def seed_food_items(session: Session):
     session.commit()
 
 
+def seed_oath(session: Session):
+    from sqlmodel import select
+    existing = session.exec(select(Oath)).first()
+    if existing:
+        return
+
+    start = date_type.today()
+    oath = Oath(
+        title="6 Month Apex Oath",
+        intention="Build products, reach Silicon Valley talent level, become physically apex.",
+        start_date=start,
+        end_date=start + timedelta(days=180),
+        status=OathStatus.active
+    )
+    session.add(oath)
+    session.flush()
+    assert oath.id is not None
+
+    milestones = [
+        OathMilestone(oath_id=oath.id, title="Ship 3 products",
+                      target_date=start + timedelta(days=90)),
+        OathMilestone(oath_id=oath.id, title="Reach Silicon Valley skill level",
+                      target_date=start + timedelta(days=180)),
+        OathMilestone(oath_id=oath.id, title="Consistent physical routine — 90 days",
+                      target_date=start + timedelta(days=90)),
+    ]
+    session.add_all(milestones)
+    session.commit()
+
+
+def seed_projects(session: Session):
+    from sqlmodel import select
+    existing = session.exec(select(Project)).first()
+    if existing:
+        return
+
+    projects = [
+        Project(
+            name="Stackd",
+            description="Daily habit and health tracking app",
+            status=ProjectStatus.active,
+            started_date=date_type.today(),
+            goal="Ship v2 with user onboarding"
+        ),
+    ]
+    session.add_all(projects)
+    session.commit()
+
+
 def run_seed():
     with Session(engine) as session:
         seed_supplements(session)
         seed_food_items(session)
+        seed_oath(session)
+        seed_projects(session)
     print("✅ Seed data loaded.")

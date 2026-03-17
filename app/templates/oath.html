@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stackd · Oath</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#1D9E75">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f0; color: #1a1a1a; min-height: 100vh;
+    }
+    .app { max-width: 480px; margin: 0 auto; padding: 1rem 1rem 4rem; }
+    .header { display: flex; justify-content: space-between; align-items: baseline; padding: 1.25rem 0 0.25rem; }
+    .header h1 { font-size: 22px; font-weight: 600; }
+    .nav-link { font-size: 13px; color: #888; text-decoration: none; }
+
+    .oath-card {
+      background: #1a1a1a;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      color: white;
+    }
+    .oath-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+    .oath-intention { font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.6; margin-bottom: 1.25rem; }
+    .oath-dates { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+    .oath-date-item { text-align: center; }
+    .oath-date-label { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+    .oath-date-value { font-size: 15px; font-weight: 500; }
+    .oath-progress-track { height: 4px; background: rgba(255,255,255,0.15); border-radius: 99px; overflow: hidden; margin-bottom: 8px; }
+    .oath-progress-fill { height: 100%; background: #1D9E75; border-radius: 99px; }
+    .oath-progress-label { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,0.4); }
+
+    .section-label {
+      font-size: 11px; font-weight: 600; color: #999;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 8px; padding-left: 2px;
+    }
+    .card { background: white; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 14px; overflow: hidden; margin-bottom: 1.25rem; }
+    .row { display: flex; align-items: center; padding: 14px 16px; gap: 12px; border-bottom: 0.5px solid rgba(0,0,0,0.06); }
+    .row:last-child { border-bottom: none; }
+
+    .milestone-check {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 1.5px solid #ccc; flex-shrink: 0; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .milestone-check.done { background: #1D9E75; border-color: #1D9E75; }
+    .milestone-check.done::after {
+      content: ''; display: block; width: 5px; height: 9px;
+      border: 2px solid white; border-top: none; border-left: none;
+      transform: rotate(45deg) translate(-1px, -1px);
+    }
+    .milestone-content { flex: 1; }
+    .milestone-title { font-size: 15px; }
+    .milestone-title.done { color: #bbb; text-decoration: line-through; }
+    .milestone-date { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+    .stat-row { display: flex; gap: 10px; margin-bottom: 1.25rem; }
+    .stat-box { flex: 1; background: white; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 0.875rem 1rem; text-align: center; }
+    .stat-num { font-size: 28px; font-weight: 600; }
+    .stat-label { font-size: 11px; color: #aaa; margin-top: 2px; }
+    .stat-num.green { color: #0F6E56; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <h1>The Oath</h1>
+    <a class="nav-link" href="/day/">← today</a>
+  </div>
+
+  <div class="oath-card">
+    <div class="oath-title">{{ oath.title }}</div>
+    <div class="oath-intention">{{ oath.intention }}</div>
+    <div class="oath-dates">
+      <div class="oath-date-item">
+        <div class="oath-date-label">started</div>
+        <div class="oath-date-value">{{ oath.start_date.strftime('%d %b %Y') }}</div>
+      </div>
+      <div class="oath-date-item">
+        <div class="oath-date-label">day</div>
+        <div class="oath-date-value" style="font-size:22px;color:#1D9E75;">{{ days_elapsed }}</div>
+      </div>
+      <div class="oath-date-item">
+        <div class="oath-date-label">ends</div>
+        <div class="oath-date-value">{{ oath.end_date.strftime('%d %b %Y') }}</div>
+      </div>
+    </div>
+    <div class="oath-progress-track">
+      <div class="oath-progress-fill" style="width:{{ pct }}%"></div>
+    </div>
+    <div class="oath-progress-label">
+      <span>{{ pct }}% complete</span>
+      <span>{{ days_remaining }} days left</span>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-box">
+      <div class="stat-num">{{ days_elapsed }}</div>
+      <div class="stat-label">days in</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">{{ days_remaining }}</div>
+      <div class="stat-label">days left</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num {% if pct >= 50 %}green{% endif %}">{{ pct }}%</div>
+      <div class="stat-label">complete</div>
+    </div>
+  </div>
+
+  <div class="section-label">Milestones</div>
+  <div class="card">
+    {% for m in milestones %}
+      {% include "partials/milestone_row.html" %}
+    {% endfor %}
+  </div>
+
+</div>
+</body>
+</html>
