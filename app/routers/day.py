@@ -190,7 +190,7 @@ def protein_bar(request: Request, session: Session = Depends(get_session)):
     protein_eaten = int(sum(item.protein_grams for log, item in food_logs if log.eaten))
     protein_pct = min(int((protein_eaten / PROTEIN_GOAL) * 100), 100)
 
-    return templates.TemplateResponse("protein_bar.html", {
+    return templates.TemplateResponse("partials/protein_bar.html", {
         "request": request,
         "protein_eaten": protein_eaten,
         "protein_goal": PROTEIN_GOAL,
