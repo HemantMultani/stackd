@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from datetime import date as date_type
+from datetime import date as date_type, timedelta
 from typing import Optional
 
 from app.database import get_session
@@ -195,4 +195,90 @@ def protein_bar(request: Request, session: Session = Depends(get_session)):
         "protein_eaten": protein_eaten,
         "protein_goal": PROTEIN_GOAL,
         "protein_pct": protein_pct,
+    })
+
+@router.get("/week", response_class=HTMLResponse)
+def weekly_summary(request: Request, session: Session = Depends(get_session)):
+    today = date_type.today()
+    # Week starts Monday
+    monday = today - timedelta(days=today.weekday())
+    week_dates = [monday + timedelta(days=i) for i in range(7)]
+
+    days_data = []
+    for d in week_dates:
+        day = session.exec(select(Day).where(Day.log_date == d)).first()
+        if not day:
+            days_data.append({
+                "date": d,
+                "exists": False,
+                "is_future": d > today,
+            })
+            continue
+
+        # Supplements
+        sup_logs = session.exec(
+            select(SupplementLog).where(SupplementLog.day_id == day.id)
+        ).all()
+        sup_done = sum(1 for s in sup_logs if s.status == ChecklistStatus.done)
+        sup_total = len(sup_logs)
+
+        # Food + protein
+        food_logs = session.exec(
+            select(FoodLog, FoodItem)
+            .where(FoodLog.day_id == day.id)
+            .where(FoodLog.food_item_id == FoodItem.id)
+        ).all()
+        protein_eaten = int(sum(i.protein_grams for l, i in food_logs if l.eaten))
+        protein_met = protein_eaten >= PROTEIN_GOAL
+
+        # Workout
+        workout = session.exec(
+            select(WorkoutLog).where(WorkoutLog.day_id == day.id)
+        ).first()
+
+        # Sprint
+        sprint = session.exec(
+            select(SprintLog).where(SprintLog.day_id == day.id)
+        ).first()
+
+        days_data.append({
+            "date": d,
+            "exists": True,
+            "is_future": d > today,
+            "is_today": d == today,
+            "sup_done": sup_done,
+            "sup_total": sup_total,
+            "protein_eaten": protein_eaten,
+            "protein_met": protein_met,
+            "workout_status": workout.status.value if workout else None,
+            "workout_scheduled": workout is not None,
+            "sprint_status": sprint.status.value if sprint else None,
+        })
+
+    # Week-level stats
+    past_days = [d for d in days_data if d["exists"] and not d["is_future"]]
+    protein_met_count = sum(1 for d in past_days if d.get("protein_met"))
+    sprint_done_count = sum(1 for d in past_days if d.get("sprint_status") == "done")
+    workout_done_count = sum(1 for d in past_days if d.get("workout_status") == "done")
+    workout_scheduled_count = sum(1 for d in past_days if d.get("workout_scheduled"))
+    sup_completion = 0
+    if past_days:
+        sup_completion = int(sum(
+            (d["sup_done"] / d["sup_total"] * 100) if d["sup_total"] else 0
+            for d in past_days
+        ) / len(past_days))
+
+    return templates.TemplateResponse("week.html", {
+        "request": request,
+        "week_dates": week_dates,
+        "days_data": days_data,
+        "today": today,
+        "monday": monday,
+        "timedelta": timedelta,
+        "protein_met_count": protein_met_count,
+        "sprint_done_count": sprint_done_count,
+        "workout_done_count": workout_done_count,
+        "workout_scheduled_count": workout_scheduled_count,
+        "sup_completion": sup_completion,
+        "protein_goal": PROTEIN_GOAL,
     })

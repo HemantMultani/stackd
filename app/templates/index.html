@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#1D9E75">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Stackd">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stackd</title>
@@ -286,11 +291,12 @@
 
   <!-- Header -->
   <div class="header">
-    <h1>Stackd</h1>
-    <span class="date">
-      {{ day.log_date.strftime('%a, %d %b') }}
-    </span>
+  <h1>Stackd</h1>
+  <div style="display:flex;gap:12px;align-items:baseline;">
+    <a href="/day/week" style="font-size:13px;color:#888;text-decoration:none;">week →</a>
+    <span class="date">{{ day.log_date.strftime('%a, %d %b') }}</span>
   </div>
+</div>
 
   <!-- Protein summary -->
   <div class="protein-card" id="protein-card">
