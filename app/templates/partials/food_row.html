@@ -1,19 +1,22 @@
 <div class="food-row" id="food-row-{{ entry.log.id }}">
-
   <div
     class="food-check {% if entry.log.eaten %}eaten{% endif %}"
     hx-patch="/food/{{ entry.log.id }}/eaten?eaten={% if entry.log.eaten %}false{% else %}true{% endif %}"
     hx-target="#food-row-{{ entry.log.id }}"
     hx-swap="outerHTML">
   </div>
-
   <div class="row-content">
-    <div class="row-title" style="font-size:14px; {% if entry.log.eaten %}color:#bbb; text-decoration:line-through;{% endif %}">
+    <div class="row-title" style="font-size:14px;{% if entry.log.eaten %}color:#bbb;text-decoration:line-through;{% endif %}">
       {{ entry.item.name }}
     </div>
-    <div class="row-sub">{{ entry.item.meal_time.value }}</div>
+    <div class="row-sub">
+      {{ entry.item.meal_time.value }}
+      {% if entry.item.serving_description %}
+        · {{ entry.item.serving_description }}
+      {% endif %}
+    </div>
   </div>
-
-  <span class="protein-tag">{{ entry.item.protein_grams | int }}g</span>
-
+  {% if entry.nutrition and entry.nutrition.protein_grams %}
+  <span class="protein-tag">{{ entry.nutrition.protein_grams | int }}g</span>
+  {% endif %}
 </div>

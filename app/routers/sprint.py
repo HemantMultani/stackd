@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
 from app.database import get_session
 from app.models import SprintLog, SprintStatus
+from datetime import datetime
 
 router = APIRouter(prefix="/sprint", tags=["sprint"])
 templates = Jinja2Templates(directory="app/templates")
@@ -21,6 +22,7 @@ def update_sprint_status(
         raise HTTPException(status_code=404, detail="Sprint log not found")
 
     log.status = status
+    log.updated_at = datetime.utcnow()
     session.add(log)
     session.commit()
     session.refresh(log)

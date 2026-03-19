@@ -291,13 +291,14 @@
 
   <!-- Header -->
   <div class="header">
-    <h1>Stackd</h1>
-    <div style="display:flex;gap:16px;align-items:baseline;">
-      <a href="/projects/" style="font-size:13px;color:#888;text-decoration:none;">projects</a>
-      <a href="/oath/" style="font-size:13px;color:#888;text-decoration:none;">oath</a>
-      <a href="/day/week" style="font-size:13px;color:#888;text-decoration:none;">week</a>
-      <span class="date">{{ day.log_date.strftime('%a, %d %b') }}</span>
-    </div>
+  <h1>Stackd</h1>
+  <div style="display:flex;gap:16px;align-items:baseline;">
+    <a href="/projects/" style="font-size:13px;color:#888;text-decoration:none;">projects</a>
+    <a href="/oath/" style="font-size:13px;color:#888;text-decoration:none;">oath</a>
+    <a href="/day/week" style="font-size:13px;color:#888;text-decoration:none;">week</a>
+    <span class="date">{{ day.log_date.strftime('%a, %d %b') }}</span>
+    <a href="/auth/logout" style="font-size:13px;color:#bbb;text-decoration:none;">out</a>
+  </div>
   </div>
 
   <!-- Protein summary -->
@@ -362,7 +363,7 @@
         <div class="activity-icon icon-workout">🏋️</div>
         <div class="activity-content">
           <div class="activity-title">
-            {{ workout.workout_type.value.replace('_', ' ').title() }}
+            {{ workout_template.name if workout_template else "Workout" }}
           </div>
           <div class="activity-sub">Evening session</div>
         </div>

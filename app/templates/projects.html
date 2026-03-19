@@ -94,14 +94,14 @@
 
     <!-- Worked today toggle -->
     <div class="worked-row" id="worked-{{ p.id }}">
-      <span class="worked-label">Worked today?</span>
-      <button
-        class="worked-toggle {% if entry.daily_log.worked %}yes{% endif %}"
-        hx-patch="/projects/{{ p.id }}/log/worked"
-        hx-target="#worked-{{ p.id }}"
-        hx-swap="outerHTML">
-        {% if entry.daily_log.worked %}yes{% else %}mark yes{% endif %}
-      </button>
+        <span class="worked-label">Worked today?</span>
+        <button
+            class="worked-toggle {% if entry.daily_log and entry.daily_log.worked %}yes{% endif %}"
+            hx-patch="/projects/{{ p.id }}/log/worked"
+            hx-target="#worked-{{ p.id }}"
+            hx-swap="outerHTML">
+            {% if entry.daily_log and entry.daily_log.worked %}yes{% else %}mark yes{% endif %}
+        </button>
     </div>
 
     <!-- Daily note -->

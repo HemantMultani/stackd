@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stackd · Workout Setup</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; min-height: 100vh; padding: 1.5rem; }
+    .wrap { max-width: 480px; margin: 0 auto; }
+    h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; padding-top: 1rem; }
+    .sub { font-size: 14px; color: #888; margin-bottom: 1.5rem; }
+    .card { background: white; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem; }
+    .section-title { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 10px; }
+    .type-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .type-row input[type=text] { flex: 1; }
+    .color-pick { width: 36px; height: 36px; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 8px; cursor: pointer; padding: 2px; }
+    input, select { width: 100%; padding: 9px 12px; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; background: white; }
+    input:focus, select:focus { border-color: #1D9E75; }
+    .schedule-row { display: grid; grid-template-columns: 80px 1fr; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .day-label { font-size: 13px; color: #555; font-weight: 500; }
+    .add-btn { width: 100%; padding: 10px; border: 0.5px dashed rgba(0,0,0,0.2); border-radius: 8px; background: transparent; font-size: 14px; color: #888; cursor: pointer; font-family: inherit; margin-top: 4px; }
+    .add-btn:hover { border-color: #1D9E75; color: #1D9E75; }
+    .btn { width: 100%; padding: 13px; background: #1a1a1a; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 500; cursor: pointer; margin-top: 1.25rem; font-family: inherit; }
+    .skip-link { display: block; text-align: center; font-size: 13px; color: #aaa; margin-top: 12px; text-decoration: none; }
+    .steps { display: flex; gap: 6px; margin-bottom: 1.5rem; }
+    .step { width: 8px; height: 8px; border-radius: 50%; background: #ddd; }
+    .step.active { background: #1D9E75; width: 20px; border-radius: 4px; }
+    .step.done { background: #1D9E75; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="steps" style="padding-top:1rem;">
+    <div class="step done"></div>
+    <div class="step done"></div>
+    <div class="step active"></div>
+    <div class="step"></div>
+    <div class="step"></div>
+    <div class="step"></div>
+  </div>
+  <h2>Your workouts</h2>
+  <p class="sub">Define your workout types, then schedule them</p>
+
+  <form method="post" action="/onboarding/workouts" id="workout-form">
+
+    <!-- Step 1: Define workout types -->
+    <div class="card">
+      <div class="section-title">Workout types</div>
+      <div id="type-list">
+        <div class="type-row">
+          <input type="text" name="workout_names"
+                 placeholder="e.g. Upper Body">
+          <input type="color" name="workout_colors"
+                 class="color-pick" value="#1D9E75">
+        </div>
+        <div class="type-row">
+          <input type="text" name="workout_names"
+                 placeholder="e.g. Lower Body">
+          <input type="color" name="workout_colors"
+                 class="color-pick" value="#185FA5">
+        </div>
+      </div>
+      <button type="button" class="add-btn" onclick="addType()">
+        + Add workout type
+      </button>
+    </div>
+
+    <!-- Step 2: Schedule -->
+    <div class="card">
+      <div class="section-title">Weekly schedule</div>
+      <div id="schedule-list">
+        {% for i, name in [(0,"Mon"),(1,"Tue"),(2,"Wed"),(3,"Thu")] %}
+        <div class="schedule-row">
+          <span class="day-label">{{ name }}</span>
+          <select name="schedule_template_indices"
+                  data-day="{{ i }}"
+                  onchange="updateScheduleDays()">
+            <option value="">— rest day —</option>
+            <option value="0">Workout type 1</option>
+            <option value="1">Workout type 2</option>
+          </select>
+        </div>
+        {% endfor %}
+      </div>
+      <div id="schedule-days-container"></div>
+    </div>
+
+    <button class="btn" type="submit">Continue →</button>
+    <a class="skip-link" href="/onboarding/supplements">
+      Skip for now
+    </a>
+  </form>
+</div>
+
+<script>
+  let typeCount = 2;
+
+  function addType() {
+    typeCount++;
+    const list = document.getElementById('type-list');
+    const row = document.createElement('div');
+    row.className = 'type-row';
+    row.innerHTML = `
+      <input type="text" name="workout_names"
+             placeholder="Workout type ${typeCount}">
+      <input type="color" name="workout_colors"
+             class="color-pick" value="#888888">`;
+    list.appendChild(row);
+
+    // Add new option to all schedule selects
+    document.querySelectorAll('[data-day]').forEach(sel => {
+      const opt = document.createElement('option');
+      opt.value = typeCount - 1;
+      opt.textContent = `Workout type ${typeCount}`;
+      sel.appendChild(opt);
+    });
+  }
+
+  function updateScheduleDays() {
+    const container = document.getElementById('schedule-days-container');
+    container.innerHTML = '';
+    document.querySelectorAll('[data-day]').forEach(sel => {
+      if (sel.value !== '') {
+        const dayInput = document.createElement('input');
+        dayInput.type = 'hidden';
+        dayInput.name = 'schedule_days';
+        dayInput.value = sel.dataset.day;
+        container.appendChild(dayInput);
+      }
+    });
+  }
+
+  // Initialise on load
+  updateScheduleDays();
+</script>
+</body>
+</html>

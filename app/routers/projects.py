@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends, Request, HTTPException, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
-from datetime import date as date_type
+from datetime import date as date_type, datetime
 from typing import Optional
 from app.database import get_session
 from app.models import (Project, ProjectTask, ProjectDailyLog,
                         ProjectStatus, TaskStatus, Day)
+from app.auth import require_user
+
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 templates = Jinja2Templates(directory="app/templates")
@@ -24,8 +26,12 @@ def get_or_create_today(session: Session) -> Day:
 
 
 @router.get("/", response_class=HTMLResponse)
-def projects_page(request: Request, session: Session = Depends(get_session)):
-    projects = session.exec(select(Project)).all()
+def projects_page(request: Request,
+                  session: Session = Depends(get_session)):
+    user = require_user(request, session)
+    projects = session.exec(
+        select(Project).where(Project.user_id == user.id)
+    ).all()
     today = date_type.today()
     day = get_or_create_today(session)
 
@@ -36,22 +42,17 @@ def projects_page(request: Request, session: Session = Depends(get_session)):
             .where(ProjectTask.project_id == p.id)
             .order_by(ProjectTask.priority)
         ).all()
-
         daily_log = session.exec(
             select(ProjectDailyLog)
             .where(ProjectDailyLog.project_id == p.id)
             .where(ProjectDailyLog.day_id == day.id)
         ).first()
+        # daily_log may be None — handle in template
 
-        if not daily_log:
-            daily_log = ProjectDailyLog(project_id=p.id, day_id=day.id)
-            session.add(daily_log)
-            session.commit()
-            session.refresh(daily_log)
-
-        todo_count = sum(1 for t in tasks if t.status == TaskStatus.todo)
-        done_count = sum(1 for t in tasks if t.status == TaskStatus.done)
-
+        todo_count = sum(1 for t in tasks
+                        if t.status == TaskStatus.todo)
+        done_count = sum(1 for t in tasks
+                        if t.status == TaskStatus.done)
         projects_data.append({
             "project": p,
             "tasks": tasks,
@@ -62,10 +63,10 @@ def projects_page(request: Request, session: Session = Depends(get_session)):
 
     return templates.TemplateResponse("projects.html", {
         "request": request,
+        "user": user,
         "projects_data": projects_data,
         "today": today,
     })
-
 
 @router.patch("/{project_id}/log/worked", response_class=HTMLResponse)
 def toggle_worked(
@@ -73,7 +74,10 @@ def toggle_worked(
     request: Request,
     session: Session = Depends(get_session)
 ):
-    day = get_or_create_today(session)
+    from app.routers.day import get_or_create_today
+    user = require_user(request, session)
+    day = get_or_create_today(session, user.id)
+
     log = session.exec(
         select(ProjectDailyLog)
         .where(ProjectDailyLog.project_id == project_id)
@@ -81,9 +85,17 @@ def toggle_worked(
     ).first()
 
     if not log:
-        raise HTTPException(status_code=404, detail="Log not found")
+        # Create lazily — only on first interaction
+        log = ProjectDailyLog(
+            project_id=project_id,
+            day_id=day.id,
+            worked=False
+        )
+        session.add(log)
+        session.flush()
 
     log.worked = not log.worked
+    log.updated_at = datetime.utcnow()
     session.add(log)
     session.commit()
     session.refresh(log)
@@ -94,7 +106,6 @@ def toggle_worked(
         "project": project,
         "daily_log": log,
     })
-
 
 @router.post("/{project_id}/log/note", response_class=HTMLResponse)
 def save_note(

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stackd · Your persona</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; min-height: 100vh; padding: 1.5rem; }
+    .wrap { max-width: 480px; margin: 0 auto; }
+    h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; padding-top: 1rem; }
+    .sub { font-size: 14px; color: #888; margin-bottom: 1.5rem; }
+    .card { background: white; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem; }
+    label { font-size: 13px; color: #555; display: block; margin-bottom: 4px; margin-top: 14px; }
+    label:first-child { margin-top: 0; }
+    input, select { width: 100%; padding: 10px 12px; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 8px; font-size: 15px; outline: none; font-family: inherit; background: white; }
+    input:focus, select:focus { border-color: #1D9E75; }
+    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 6px; }
+    .day-btn { padding: 8px 4px; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 8px; font-size: 12px; text-align: center; cursor: pointer; background: white; font-family: inherit; }
+    .day-btn.selected { background: #1a1a1a; color: white; border-color: #1a1a1a; }
+    .btn { width: 100%; padding: 13px; background: #1a1a1a; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 500; cursor: pointer; margin-top: 1.25rem; font-family: inherit; }
+    .steps { display: flex; gap: 6px; margin-bottom: 1.5rem; }
+    .step { width: 8px; height: 8px; border-radius: 50%; background: #ddd; }
+    .step.active { background: #1D9E75; width: 20px; border-radius: 4px; }
+    .step.done { background: #1D9E75; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="steps" style="padding-top:1rem;">
+    <div class="step done"></div>
+    <div class="step active"></div>
+    <div class="step"></div>
+    <div class="step"></div>
+    <div class="step"></div>
+  </div>
+  <h2>Your persona</h2>
+  <p class="sub">Basic info and schedule</p>
+
+  <form method="post" action="/onboarding/persona" id="persona-form">
+    <div class="card">
+      <label>Display name</label>
+      <input type="text" name="display_name"
+             value="{{ user.display_name }}" required>
+
+      <label>Daily protein goal (grams)</label>
+      <input type="number" name="protein_goal"
+             value="{{ user.protein_goal }}" min="50" max="300" required>
+
+      <label>Sprint sessions target per week</label>
+      <input type="number" name="sprint_target"
+             value="{{ user.sprint_target }}" min="1" max="7" required>
+    </div>
+
+    <div class="card">
+      <label>Workout days</label>
+      <div class="days-grid" id="days-grid">
+        {% set day_names = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] %}
+        {% set selected = user.workout_days.split(",") %}
+        {% for i in range(7) %}
+        <button type="button"
+          class="day-btn {% if i|string in selected %}selected{% endif %}"
+          data-day="{{ i }}"
+          onclick="toggleDay(this)">
+          {{ day_names[i] }}
+        </button>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="workout_days"
+             id="workout-days-input" value="{{ user.workout_days }}">
+    </div>
+
+    <button class="btn" type="submit">Continue →</button>
+  </form>
+</div>
+<script>
+  function toggleDay(btn) {
+    btn.classList.toggle('selected');
+    const selected = [...document.querySelectorAll('.day-btn.selected')]
+      .map(b => b.dataset.day);
+    document.getElementById('workout-days-input').value = selected.join(',');
+  }
+</script>
+</body>
+</html>

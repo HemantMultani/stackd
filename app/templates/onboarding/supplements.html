@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stackd · Supplements</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; min-height: 100vh; padding: 1.5rem; }
+    .wrap { max-width: 480px; margin: 0 auto; }
+    h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; padding-top: 1rem; }
+    .sub { font-size: 14px; color: #888; margin-bottom: 1.5rem; }
+    .card { background: white; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem; }
+    .sup-row { display: grid; grid-template-columns: 1fr 100px; gap: 8px; margin-bottom: 10px; align-items: start; }
+    .sup-row:last-child { margin-bottom: 0; }
+    input, select { width: 100%; padding: 9px 12px; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; background: white; }
+    input:focus, select:focus { border-color: #1D9E75; }
+    .add-btn { width: 100%; padding: 10px; border: 0.5px dashed rgba(0,0,0,0.2); border-radius: 8px; background: transparent; font-size: 14px; color: #888; cursor: pointer; font-family: inherit; margin-top: 4px; }
+    .add-btn:hover { border-color: #1D9E75; color: #1D9E75; }
+    .btn { width: 100%; padding: 13px; background: #1a1a1a; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 500; cursor: pointer; margin-top: 1.25rem; font-family: inherit; }
+    .steps { display: flex; gap: 6px; margin-bottom: 1.5rem; }
+    .step { width: 8px; height: 8px; border-radius: 50%; background: #ddd; }
+    .step.active { background: #1D9E75; width: 20px; border-radius: 4px; }
+    .step.done { background: #1D9E75; }
+    .hint { font-size: 11px; color: #aaa; margin-top: 2px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="steps" style="padding-top:1rem;">
+    <div class="step done"></div>
+    <div class="step done"></div>
+    <div class="step done"></div>
+    <div class="step active"></div>
+    <div class="step"></div>
+    <div class="step"></div>
+  </div>
+  <h2>Your supplements</h2>
+  <p class="sub">Add each supplement and when you take it</p>
+
+  <form method="post" action="/onboarding/supplements">
+    <div class="card" id="sup-list">
+      <div class="sup-row">
+        <div>
+          <input type="text" name="names" placeholder="e.g. Vitamin C 500mg">
+          <input type="text" name="notes" placeholder="Notes (optional)" style="margin-top:6px;font-size:12px;">
+        </div>
+        <select name="times">
+          {% for t in times %}
+          <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <button type="button" class="add-btn" onclick="addRow()">+ Add supplement</button>
+    <button class="btn" type="submit">Continue →</button>
+  </form>
+</div>
+<script>
+  const times = {{ times | tojson }};
+  function addRow() {
+    const list = document.getElementById('sup-list');
+    const row = document.createElement('div');
+    row.className = 'sup-row';
+    row.innerHTML = `
+      <div>
+        <input type="text" name="names" placeholder="Supplement name">
+        <input type="text" name="notes" placeholder="Notes (optional)" style="margin-top:6px;font-size:12px;">
+      </div>
+      <select name="times">
+        ${times.map(t => `<option value="${t}">${t}</option>`).join('')}
+      </select>`;
+    list.appendChild(row);
+  }
+</script>
+</body>
+</html>

@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 from app.database import get_session
 from app.models import SupplementLog, Supplement, ChecklistStatus
+from datetime import datetime
 
 router = APIRouter(prefix="/supplements", tags=["supplements"])
 templates = Jinja2Templates(directory="app/templates")
@@ -21,6 +22,7 @@ def update_supplement_status(
         raise HTTPException(status_code=404, detail="Supplement log not found")
 
     log.status = status
+    log.updated_at = datetime.utcnow()
     session.add(log)
     session.commit()
     session.refresh(log)

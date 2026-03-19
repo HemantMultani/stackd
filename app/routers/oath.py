@@ -1,23 +1,29 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 from datetime import date as date_type
 from app.database import get_session
 from app.models import Oath, OathMilestone
+from app.auth import require_user
 
 router = APIRouter(prefix="/oath", tags=["oath"])
 templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/", response_class=HTMLResponse)
-def oath_page(request: Request, session: Session = Depends(get_session)):
-    oath = session.exec(select(Oath)).first()
+def oath_page(request: Request,
+              session: Session = Depends(get_session)):
+    user = require_user(request, session)
+    oath = session.exec(
+        select(Oath).where(Oath.user_id == user.id)
+    ).first()
     if not oath:
-        raise HTTPException(status_code=404, detail="No oath found")
+        return RedirectResponse(url="/onboarding/oath", status_code=302)
 
     milestones = session.exec(
-        select(OathMilestone).where(OathMilestone.oath_id == oath.id)
+        select(OathMilestone)
+        .where(OathMilestone.oath_id == oath.id)
     ).all()
 
     today = date_type.today()
@@ -28,6 +34,7 @@ def oath_page(request: Request, session: Session = Depends(get_session)):
 
     return templates.TemplateResponse("oath.html", {
         "request": request,
+        "user": user,
         "oath": oath,
         "milestones": milestones,
         "days_elapsed": days_elapsed,
